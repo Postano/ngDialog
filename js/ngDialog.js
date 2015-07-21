@@ -430,20 +430,32 @@
                      * - closeByEscape {Boolean} - default true
                      * - closeByDocument {Boolean} - default true
                      * - preCloseCallback {String|Function} - user supplied function name/function called before closing dialog (if set)
+                     * - recycle {String} - id of dialog to recycle (instead of creating a new one)
                      *
                      * @return {Object} dialog
                      */
                     open: function (opts) {
-                        var options = angular.copy(defaults);
-                        var localID = ++globalID;
-                        var dialogID = 'ngdialog' + localID;
-                        openIdStack.push(dialogID);
+                        var recycled = false;
 
+                        var options = angular.copy(defaults);
                         opts = opts || {};
                         angular.extend(options, opts);
 
+                        if (options.recycle && angular.isString(options.recycle)) {
+                            var dialogID = options.recycle;
+                            recycled = true;
+                        } else {
+                            var localID = ++globalID;
+                            var dialogID = 'ngdialog' + localID;
+                            openIdStack.push(dialogID);
+                        }
+
                         var defer;
                         defers[dialogID] = defer = $q.defer();
+
+                        if (recycled && scopes[dialogID]) {
+                            scopes[dialogID].$destroy();
+                        }
 
                         var scope;
                         scopes[dialogID] = scope = angular.isObject(options.scope) ? options.scope.$new() : $rootScope.$new();
@@ -467,10 +479,17 @@
                                 template += '<div class="ngdialog-close"></div>';
                             }
 
-                            $dialog = $el('<div id="ngdialog' + localID + '" class="ngdialog"></div>');
-                            $dialog.html((options.overlay ?
-                                '<div class="ngdialog-overlay"></div><div class="ngdialog-content" role="document">' + template + '</div>' :
-                                '<div class="ngdialog-content" role="document">' + template + '</div>'));
+                            if (recycled) {
+                                $dialog = $el(document.getElementById(dialogID));
+                                $dialog.find(".ngdialog-content").replaceWith('<div class="ngdialog-content" role="document">' + template + '</div>');
+                                // $dialog.find(".ngdialog-content").empty();
+                                // $dialog.find(".ngdialog-content").append(template);
+                            } else {
+                                $dialog = $el('<div id="ngdialog' + localID + '" class="ngdialog"></div>');
+                                $dialog.html((options.overlay ?
+                                    '<div class="ngdialog-overlay"></div><div class="ngdialog-content" role="document">' + template + '</div>' :
+                                    '<div class="ngdialog-content" role="document">' + template + '</div>'));
+                            }
 
                             $dialog.data('$ngDialogOptions', options);
 
