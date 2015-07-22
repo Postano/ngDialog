@@ -445,8 +445,7 @@
                             var dialogID = options.recycle;
                             recycled = true;
                         } else {
-                            var localID = ++globalID;
-                            var dialogID = 'ngdialog' + localID;
+                            var dialogID = 'ngdialog' + ++globalID;
                             openIdStack.push(dialogID);
                         }
 
@@ -479,17 +478,10 @@
                                 template += '<div class="ngdialog-close"></div>';
                             }
 
-                            if (recycled) {
-                                $dialog = $el(document.getElementById(dialogID));
-                                $dialog.find(".ngdialog-content").replaceWith('<div class="ngdialog-content" role="document">' + template + '</div>');
-                                // $dialog.find(".ngdialog-content").empty();
-                                // $dialog.find(".ngdialog-content").append(template);
-                            } else {
-                                $dialog = $el('<div id="ngdialog' + localID + '" class="ngdialog"></div>');
-                                $dialog.html((options.overlay ?
-                                    '<div class="ngdialog-overlay"></div><div class="ngdialog-content" role="document">' + template + '</div>' :
-                                    '<div class="ngdialog-content" role="document">' + template + '</div>'));
-                            }
+                            $dialog = $el('<div id="' + dialogID + '" class="ngdialog"></div>');
+                            $dialog.html((options.overlay ?
+                                '<div class="ngdialog-overlay"></div><div class="ngdialog-content" role="document">' + template + '</div>' :
+                                '<div class="ngdialog-content" role="document">' + template + '</div>'));
 
                             $dialog.data('$ngDialogOptions', options);
 
@@ -576,6 +568,10 @@
                                 var scrollBarWidth = widthDiffs - ($window.innerWidth - $body.prop('clientWidth'));
                                 if (scrollBarWidth > 0) {
                                     privateMethods.setBodyPadding(scrollBarWidth);
+                                }
+                                if (recycled) {
+                                    var element = document.getElementById(dialogID);
+                                    element.parentNode.removeChild(element);
                                 }
                                 $dialogParent.append($dialog);
 
