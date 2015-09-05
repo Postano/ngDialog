@@ -446,8 +446,9 @@
                             recycled = true;
                         } else {
                             var dialogID = 'ngdialog' + ++globalID;
-                            openIdStack.push(dialogID);
                         }
+                        
+                        openIdStack.push(dialogID);
 
                         var defer;
                         defers[dialogID] = defer = $q.defer();
