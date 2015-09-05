@@ -448,7 +448,9 @@
                             var dialogID = 'ngdialog' + ++globalID;
                         }
                         
-                        openIdStack.push(dialogID);
+                        if (openIdStack.indexOf(dialogID) === -1) {
+                            openIdStack.push(dialogID);    
+                        }
 
                         var defer;
                         defers[dialogID] = defer = $q.defer();
