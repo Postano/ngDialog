@@ -436,6 +436,7 @@
                      */
                     open: function (opts) {
                         var recycled = false;
+                        var defer;
 
                         var options = angular.copy(defaults);
                         opts = opts || {};
@@ -443,17 +444,13 @@
 
                         if (options.recycle && angular.isString(options.recycle)) {
                             var dialogID = options.recycle;
+                            defer = defers[dialogID];
                             recycled = true;
                         } else {
                             var dialogID = 'ngdialog' + ++globalID;
-                        }
-                        
-                        if (openIdStack.indexOf(dialogID) === -1) {
                             openIdStack.push(dialogID);    
+                            defers[dialogID] = defer = $q.defer();
                         }
-
-                        var defer;
-                        defers[dialogID] = defer = $q.defer();
 
                         if (recycled && scopes[dialogID]) {
                             scopes[dialogID].$destroy();
