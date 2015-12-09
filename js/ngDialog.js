@@ -620,7 +620,9 @@
                                 $dialog.bind('click', closeByDocumentHandler);
                             }
 
-                            dialogsCount += 1;
+                            if (!recycled) {
+                                dialogsCount += 1;    
+                            }
 
                             return publicMethods;
                         });
