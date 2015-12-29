@@ -42,6 +42,8 @@
             closeByEscape: true,
             closeByNavigation: false,
             appendTo: false,
+            alignTo: false,
+            alignSide: false,
             preCloseCallback: false,
             overlay: true,
             cache: true,
@@ -412,6 +414,175 @@
                             return '$stateChangeSuccess';
                         }
                         return '$locationChangeSuccess';
+                    },
+
+                    getPosition: function(dialog, element, appendTo) {
+                        var el = element[0];
+                        var elRect = el.getBoundingClientRect();
+                        if (elRect.width === null) {
+                            // width and height are missing in IE8, so compute them manually; see https://github.com/twbs/bootstrap/issues/14093
+                            elRect = angular.extend({}, elRect, {
+                                width: elRect.right - elRect.left,
+                                height: elRect.bottom - elRect.top
+                            });
+                        }
+
+                        var elPos;
+                        if (!appendTo) {
+                            elPos = privateMethods.offset(el);
+                        } else {
+                            elPos = privateMethods.position(el);
+                        }
+
+                        return angular.extend({}, elRect, elPos);
+                    },
+
+                    getCalculatedOffset: function(placement, position, actualWidth, actualHeight) {
+                        var offset;
+                        var split = placement.split("-");
+
+                        switch (split[0]) {
+                          case "right":
+                            offset = {
+                                top: position.top + position.height / 2 - actualHeight / 2,
+                                left: position.left + position.width
+                            };
+                            break;
+
+                          case "bottom":
+                            offset = {
+                                top: position.top + position.height,
+                                left: position.left + position.width / 2 - actualWidth / 2
+                            };
+                            break;
+
+                          case "left":
+                            offset = {
+                                top: position.top + position.height / 2 - actualHeight / 2,
+                                left: position.left - actualWidth
+                            };
+                            break;
+
+                          default:
+                            offset = {
+                                top: position.top - actualHeight,
+                                left: position.left + position.width / 2 - actualWidth / 2
+                            };
+                            break;
+                        }
+
+                        if (!split[1]) {
+                            return offset;
+                        }
+                        // Add support for corners @todo css
+                        if (split[0] === "top" || split[0] === "bottom") {
+                            switch (split[1]) {
+                              case "left":
+                                offset.left = position.left;
+                                break;
+
+                              case "right":
+                                offset.left = position.left + position.width - actualWidth;
+                            }
+                        } else if (split[0] === "left" || split[0] === "right") {
+                            switch (split[1]) {
+                              case "top":
+                                offset.top = position.top - actualHeight;
+                                break;
+
+                              case "bottom":
+                                offset.top = position.top + position.height;
+                            }
+                        }
+
+                        return offset;
+                    },
+
+                    /**
+                     * Test the element nodeName
+                     * @param element
+                     * @param name
+                     */
+                    nodeName: function(element, name) {
+                      return element.nodeName && element.nodeName.toLowerCase() === name.toLowerCase();
+                    },
+
+                    /**
+                     * Returns the element computed style
+                     * @param element
+                     * @param prop
+                     * @param extra
+                     */
+                    css: function (element, prop, extra) {
+                      var value;
+                      if (element.currentStyle) { //IE
+                        value = element.currentStyle[prop];
+                      } else if (window.getComputedStyle) {
+                        value = window.getComputedStyle(element)[prop];
+                      } else {
+                        value = element.style[prop];
+                      }
+                      return extra === true ? parseFloat(value) || 0 : value;
+                    },
+
+                    /**
+                     * Provides read-only equivalent of jQuery's offset function:
+                     * @required-by bootstrap-tooltip, bootstrap-affix
+                     * @url http://api.jquery.com/offset/
+                     * @param element
+                     */
+                    offset: function(element) {
+                      var boxRect = element.getBoundingClientRect();
+                      var docElement = element.ownerDocument;
+                      return {
+                        width: boxRect.width || element.offsetWidth,
+                        height: boxRect.height || element.offsetHeight,
+                        top: boxRect.top + (window.pageYOffset || docElement.documentElement.scrollTop) - (docElement.documentElement.clientTop || 0),
+                        left: boxRect.left + (window.pageXOffset || docElement.documentElement.scrollLeft) - (docElement.documentElement.clientLeft || 0)
+                      };
+                    },
+
+                    /**
+                     * Provides read-only equivalent of jQuery's position function
+                     * @required-by bootstrap-tooltip, bootstrap-affix
+                     * @url http://api.jquery.com/offset/
+                     * @param element
+                     */
+                    position: function(element) {
+
+                      var offsetParentRect = {top: 0, left: 0},
+                          offsetParentElement,
+                          offset;
+
+                      // Fixed elements are offset from window (parentOffset = {top:0, left: 0}, because it is it's only offset parent
+                      if (privateMethods.css(element, 'position') === 'fixed') {
+
+                        // We assume that getBoundingClientRect is available when computed position is fixed
+                        offset = element.getBoundingClientRect();
+
+                      } else {
+
+                        // Get *real* offsetParentElement
+                        offsetParentElement = offsetParent(element);
+
+                        // Get correct offsets
+                        offset = privateMethods.offset(element);
+                        if (!privateMethods.nodeName(offsetParentElement, 'html')) {
+                          offsetParentRect = privateMethods.offset(offsetParentElement);
+                        }
+
+                        // Add offsetParent borders
+                        offsetParentRect.top += privateMethods.css(offsetParentElement, 'borderTopWidth', true);
+                        offsetParentRect.left += privateMethods.css(offsetParentElement, 'borderLeftWidth', true);
+                      }
+
+                      // Subtract parent offsets and element margins
+                      return {
+                        width: element.offsetWidth,
+                        height: element.offsetHeight,
+                        top: offset.top - offsetParentRect.top - privateMethods.css(element, 'marginTop', true),
+                        left: offset.left - offsetParentRect.left - privateMethods.css(element, 'marginLeft', true)
+                      };
                     }
                 };
 
@@ -528,6 +699,24 @@
                                 $dialogParent = angular.element(document.querySelector(options.appendTo));
                             } else {
                                 $dialogParent = $body;
+                            }
+
+                            if (options.alignTo) {
+                                var alignTo = options.alignTo;
+                                var dialog = $dialog.find(".ngdialog-content");
+                                dialog.addClass("ngdialog-alignable");
+
+                                // Get the position of the target element
+                                // and the height and width of the tooltip so we can center it.
+                                var elementPosition = privateMethods.getPosition(dialog, alignTo, options.appendTo);
+                                var width = alignTo.prop("offsetWidth");
+                                var height = alignTo.prop("offsetHeight");
+
+                                var position = privateMethods.getCalculatedOffset(options.alignSide, elementPosition, width, height);
+                                dialog.css({
+                                    top: position.top + "px",
+                                    left: position.left + "px"
+                                });
                             }
 
                             privateMethods.applyAriaAttributes($dialog, options);
