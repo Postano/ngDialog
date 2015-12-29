@@ -653,11 +653,18 @@
                                 template += '<div class="ngdialog-close"></div>';
                             }
 
-                            $dialog = $el('<div id="' + dialogID + '" class="ngdialog"></div>');
-                            $dialog.html((options.overlay ?
-                                '<div class="ngdialog-overlay"></div><div class="ngdialog-content" role="document">' + template + '</div>' :
-                                '<div class="ngdialog-content" role="document">' + template + '</div>'));
+                            var html;
 
+                            if (options.overlay) {
+                                html = '<div class="ngdialog-overlay"></div><div class="ngdialog-content" role="document">' + template + '</div>'
+                            } else if (options.closeByDocument) {
+                                html = '<div class="ngdialog-overlay ngdialog-overlay-transparent"></div><div class="ngdialog-content" role="document">' + template + '</div>'
+                            } else {
+                                html = '<div class="ngdialog-content" role="document">' + template + '</div>';
+                            }
+
+                            $dialog = $el('<div id="' + dialogID + '" class="ngdialog"></div>');
+                            $dialog.html(html);
                             $dialog.data('$ngDialogOptions', options);
 
                             scope.ngDialogId = dialogID;
