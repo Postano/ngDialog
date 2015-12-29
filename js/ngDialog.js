@@ -490,6 +490,10 @@
                                 offset.top = position.top - actualHeight;
                                 break;
 
+                              case "middle":
+                                offset.top = position.top - actualHeight + (actualHeight >> 1);
+                                break;
+
                               case "bottom":
                                 offset.top = position.top + position.height;
                             }
