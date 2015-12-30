@@ -43,6 +43,8 @@
             closeByNavigation: false,
             appendTo: false,
             alignTo: false,
+            alignX: 0,
+            alignY: 0,            
             alignSide: false,
             preCloseCallback: false,
             overlay: true,
@@ -724,6 +726,15 @@
                                 var height = alignTo.prop("offsetHeight");
 
                                 var position = privateMethods.getCalculatedOffset(options.alignSide, elementPosition, width, height);
+
+                                if (options.alignX) {
+                                    position.left += options.alignX;
+                                }
+
+                                if (options.alignY) {
+                                    position.top += options.alignY;
+                                }
+
                                 dialog.css({
                                     top: position.top + "px",
                                     left: position.left + "px"
